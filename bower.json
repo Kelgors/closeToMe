@@ -1,0 +1,21 @@
+{
+  "name": "closeToMe",
+  "version": "0.0.0",
+  "authors": [
+    "Kelgors <matthieuboheas@gmail.com>"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "PreloadJS": "*",
+    "easeljs": "*",
+    "requirejs": "~2.1.14"
+  }
+}
