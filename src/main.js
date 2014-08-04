@@ -13,9 +13,9 @@ ParticleGenerator.prototype.spawn = function (x, y) {
   });
 };
 ParticleGenerator.prototype.tick = function () {
-  var current;
+  var current, index = 0;
   this.graphics.clear().beginFill('#FFFF00');
-  for (var index = 0; index < this.spawned.length; index++) {
+  for (; index < this.spawned.length; index++) {
     current = this.spawned[index];
     current.lifetime++;
     if (current.lifetime > this.maxLifeTime || this.onTick(this.graphics, current)) {
@@ -23,6 +23,17 @@ ParticleGenerator.prototype.tick = function () {
       index--;
     }
   }
+};
+function Assets() {
+  this.animations = {};
+  this.spritesheets = {};
+  this.images = {};
+}
+Assets.animation = function (name) {
+  return { id: "animations." + name, src: "/src/medias/animations/" + name + ".json"   };
+};
+Assets.image = function (name) {
+  return { id: "images." + name, src: "/src/medias/images/" + name + ".png" };
 };
 
 function onLoadComplete() {
@@ -48,18 +59,6 @@ function onLoadComplete() {
     this._goto(this.currentAnimation, currentFrame);
   };
 
-  function Assets() {
-    this.animations = {};
-    this.spritesheets = {};
-    this.images = {};
-  }
-  Assets.animation = function (name) {
-    return { id: "animations." + name, src: "/src/medias/animations/" + name + ".json"   };
-  };
-  Assets.image = function (name) {
-    return { id: "images." + name, src: "/src/medias/images/" + name + ".png" };
-  };
-
   var loadQueue = new createjs.LoadQueue();
 
   var manifests = {};
@@ -82,7 +81,7 @@ function onLoadComplete() {
           assets[breadcrumb[0]][breadcrumb[1]] = new createjs.SpriteSheet(event.result);
         }
         break;
-      case createjs.LoadQueue.IMAGE:
+      default:
         assets[breadcrumb[0]][breadcrumb[1]] = event.result;
         break;
     }
@@ -91,7 +90,7 @@ function onLoadComplete() {
   function onFileLoadingComplete() {
     var
       stage,
-      playerSprite, rollSprite, stressBar, otheroneSprite, doorBitmap,
+      playerSprite, rollSprite, stressBar, otheroneSprite, doorBitmap, corners,
       particles, bullets,
       keydowns = {
         turn: false,
@@ -115,7 +114,7 @@ function onLoadComplete() {
     bullets = new ParticleGenerator(100, bulletShape.graphics);
     particles.onTick = function (g, current) {
       current.x += Math.random() * -5 << 0;
-      current.y += (((current.lifetime - 10) * 100) / 200) << 0;
+      current.y += ((current.lifetime - 10) * 0.5) << 0
       g.drawRect(current.x, current.y, 5, 5);
     };
     bullets.onTick = function (g, current) {
@@ -136,7 +135,8 @@ function onLoadComplete() {
     // setup positions & behaviors
     doorBitmap.x = stage.canvas.width - doorBitmap.image.width - 20;
     doorBitmap.y = -doorBitmap.image.height;
-    rollSprite.x = playerSprite.x = 60;
+    rollSprite.x = playerSprite.x = 100;
+    rollSprite.y = playerSprite.y = 10;
     otheroneSprite.x = stage.canvas.width;
     otheroneSprite.y = 10;
     otheroneSprite.shouldIdling = false;
@@ -156,7 +156,7 @@ function onLoadComplete() {
     }
 
     // animations helpers
-    function changeTourniquetAnimationSpeed(value) {
+    function changeRollAnimationSpeed(value) {
       if (currentAnimationFrame === 'roll') {
         playerSprite.setAnimationSpeed(value);
       }
@@ -165,7 +165,10 @@ function onLoadComplete() {
     function getRollAnimationSpeed() {
       return rollSprite.getAnimationSpeed();
     }
-    changeTourniquetAnimationSpeed(0);
+    changeRollAnimationSpeed(0);
+
+    // corners
+    corners = new createjs.Shape();
 
     // GUI
     stressBar = new createjs.Shape();
@@ -186,13 +189,13 @@ function onLoadComplete() {
               playerSprite.setAnimationSpeed(0);
               synchronizeSpriteAnimationFrame = false;
               if (rollSprite.getAnimationSpeed() < MIN_ANIMATION_SPEED) {
-                changeTourniquetAnimationSpeed(MIN_ANIMATION_SPEED);
+                changeRollAnimationSpeed(MIN_ANIMATION_SPEED);
               }
             }
             last.turn = Date.now();
-            changeTourniquetAnimationSpeed(getRollAnimationSpeed() + 0.01 * (2 - getRollAnimationSpeed()));
+            changeRollAnimationSpeed(getRollAnimationSpeed() + 0.01 * (2 - getRollAnimationSpeed()));
             if (getRollAnimationSpeed() > 1) {
-              changeTourniquetAnimationSpeed(1);
+              changeRollAnimationSpeed(1);
             }
           }
           break;
@@ -213,13 +216,26 @@ function onLoadComplete() {
               }
             }
             particles.spawn(playerSprite.x + 134, playerSprite.y + 125);
-            bullets.spawn(playerSprite.x + 166, playerSprite.y + 134);
+            bullets.spawn(playerSprite.x + 166 - playerSprite.currentFrame, playerSprite.y + 134);
             keydowns.turn = false;
             last.attack = Date.now();
             playerSprite.setAnimationSpeed(playerSprite.getAnimationSpeed() + 0.1 * (2 - playerSprite.getAnimationSpeed()));
           }
           break;
       }
+    }
+
+    function drawCorners() {
+      corners.graphics.clear()
+        .beginStroke('#000000')
+        .moveTo(20, 200)
+        .lineTo(120, 10)
+        .lineTo(600, 10)
+        .moveTo(120, 10)
+        .lineTo(120, 190)
+        .lineTo(20, 400)
+        .moveTo(120, 190)
+        .lineTo(600, 190);
     }
 
     function updateDoorPosition() {
@@ -253,14 +269,14 @@ function onLoadComplete() {
       if (!keydowns.turn && now - last.turn > 200 || keydowns.turn && now - last.turn > 300) {
         // decelerate player &&/|| roll
         var min = currentAnimationFrame === 'attack' ? -0.25 : MIN_ANIMATION_SPEED;
-        changeTourniquetAnimationSpeed(getRollAnimationSpeed() - 0.015);
+        changeRollAnimationSpeed(getRollAnimationSpeed() - 0.015);
         if (getRollAnimationSpeed() < min) {
-          changeTourniquetAnimationSpeed(min);
+          changeRollAnimationSpeed(min);
         }
       }
       if (getRollAnimationSpeed() < 0) {
         if (rollSprite.framesReverse++ % Math.abs(rollSprite._animation.speed * 100) === 0) {
-          console.log('reverse');
+          // console.log('reverse');
           rollSprite.reverse();
         }
       }
@@ -269,6 +285,7 @@ function onLoadComplete() {
     // bind events
     window.addEventListener('keydown', onKeyEvent);
     window.addEventListener('keyup', onKeyEvent);
+    createjs.Ticker.addEventListener('tick', drawCorners);
     createjs.Ticker.addEventListener('tick', updateAnimationSpeed);
     createjs.Ticker.addEventListener('tick', drawStressBar);
     createjs.Ticker.addEventListener('tick', particles.tick.bind(particles));
@@ -280,6 +297,7 @@ function onLoadComplete() {
 
 
     // add childs
+    stage.addChild(corners);
     stage.addChild(rollSprite);
     stage.addChild(playerSprite);
 

@@ -1,0 +1,21 @@
+{
+  "images": ["/src/medias/images/blop.png"],
+  "frames": {
+    "width": 125,
+    "height": 120,
+    "count": 10,
+    "regX": 0,
+    "regY": 0
+  },
+  "animations": {
+    "idle": 1,
+    "idle": {
+      "frames": [0,1,2,3,4],
+      "speed": 1
+    },
+    "walk": {
+      "frames": [5,6,7,8,9,10],
+      "speed": 1
+    }
+  }
+}
