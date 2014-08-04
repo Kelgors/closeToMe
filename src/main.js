@@ -68,6 +68,7 @@ function onLoadComplete() {
     Assets.animation('player'),
     Assets.animation('tourniquet'),
     Assets.animation('otherone'),
+    Assets.animation('blop'),
     Assets.image('door')
   ]);
 
